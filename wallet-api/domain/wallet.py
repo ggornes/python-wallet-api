@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from domain.credit_command import CreditCommand
 from domain.debit_command import DebitCommand
 from domain.exceptions.insufficient_wallet_funds_exception import InsufficientWalletFundsException
@@ -6,12 +8,12 @@ from domain.transaction import Transaction
 
 
 class Wallet:
-    wallet_id: str
+    wallet_id: UUID
     balance: int
     version: int
     unsaved_transactions = []
 
-    def __init__(self, wallet_id: str):
+    def __init__(self, wallet_id: UUID):
         self.wallet_id = wallet_id
         self.balance = 0
         self.version = 0
@@ -30,8 +32,10 @@ class Wallet:
         return tx
 
     def debit(self, command: DebitCommand) -> Transaction:
-        if self.version == 0: raise WalletNotFoundException(command.wallet_id)
-        if self.balance <= command.transaction_amount: raise InsufficientWalletFundsException(command.transaction_amount, command.wallet_id, self.balance)
+        if self.version == 0:
+            raise WalletNotFoundException(command.wallet_id)
+        if self.balance <= command.transaction_amount:
+            raise InsufficientWalletFundsException(command.transaction_amount, command.wallet_id, self.balance)
         updated_balance = self.balance - command.transaction_amount
         updated_version = self.version + 1
         tx = Transaction(
