@@ -1,8 +1,10 @@
 from uuid import UUID
-
-from fastapi import APIRouter, status, Request, FastAPI
+from databases import Database
+from fastapi import APIRouter, status, Request, FastAPI, Depends
 from starlette.responses import JSONResponse
-from data.in_memory_wallet_repository import InMemoryWalletRepository
+
+from app.config import DATABASE_URL
+from data.postgres_wallet_repository import PostgresWalletRepository, BaseRepository
 from domain.command_handler import CommandHandler
 from domain.exceptions.duplicate_transaction_exception import DuplicateTransactionException
 from domain.exceptions.illegal_transaction_amount_exception import IllegalTransactionAmountException
@@ -23,15 +25,27 @@ app = get_application()
 
 router = APIRouter()
 
-wallet_repository = InMemoryWalletRepository()
+
+database = Database(DATABASE_URL)
+@app.on_event("startup")
+async def startup():
+    await database.connect()
+
+@app.on_event("shutdown")
+async def shutdown():
+    await database.disconnect()
+
+
+wallet_repository = PostgresWalletRepository(database)
+
 commandHandler = CommandHandler(wallet_repository)
 queryHandler = QueryHandler(wallet_repository)
 
 
 @router.get("/wallets/{wallet_id}",
             status_code=status.HTTP_200_OK, response_model=WalletBalanceResponse)
-def handle_wallet_balance_request(wallet_id: UUID):
-    wallet_balance = queryHandler.handle(wallet_id)
+async def handle_wallet_balance_request(wallet_id: UUID):
+    wallet_balance = await queryHandler.handle(wallet_id)
     return WalletBalanceResponse(transaction_id=wallet_balance.transaction_id,
                                  version=wallet_balance.version,
                                  coins=wallet_balance.balance)
@@ -39,18 +53,18 @@ def handle_wallet_balance_request(wallet_id: UUID):
 
 @router.post("/wallets/{wallet_id}/credit",
              status_code=status.HTTP_201_CREATED, response_model=WalletTransactionResponse)
-def handle_credit_request(wallet_id: UUID, req: WalletTransactionRequest):
+async def handle_credit_request(wallet_id: UUID, req: WalletTransactionRequest):
     credit_command = req.to_credit_command(wallet_id)
-    transaction = commandHandler.handle_credit(credit_command)
+    transaction = await commandHandler.handle_credit(credit_command)
     return WalletTransactionResponse(transaction_id=transaction.transaction_id,
                                      coins=transaction.transaction_amount)
 
 
 @router.post("/wallets/{wallet_id}/debit",
              status_code=status.HTTP_201_CREATED, response_model=WalletTransactionResponse)
-def handle_debit_request(wallet_id: UUID, req: WalletTransactionRequest):
+async def handle_debit_request(wallet_id: UUID, req: WalletTransactionRequest):
     debit_command = req.to_debit_command(wallet_id)
-    transaction = commandHandler.handle_debit(debit_command)
+    transaction = await commandHandler.handle_debit(debit_command)
     return WalletTransactionResponse(transaction_id=transaction.transaction_id,
                                      coins=transaction.transaction_amount)
 

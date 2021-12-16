@@ -10,6 +10,6 @@ class QueryHandler:
     def __init__(self, wallet_balance_repo: WalletBalanceRepository):
         self.wallet_balance_repository = wallet_balance_repo
 
-    def handle(self, query: UUID) -> WalletBalance:
-        wallet_balance = self.wallet_balance_repository.load_wallet_balance(query)
+    async def handle(self, query: UUID) -> WalletBalance:
+        wallet_balance = await self.wallet_balance_repository.load_wallet_balance(query)
         return wallet_balance
