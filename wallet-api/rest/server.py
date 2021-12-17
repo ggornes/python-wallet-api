@@ -2,8 +2,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, status, Request, FastAPI
 from starlette.responses import JSONResponse
-from app import config
-from data.postgres_wallet_repository import PostgresWalletRepository
+from data.in_memory_wallet_repository import InMemoryWalletRepository
 from domain.command_handler import CommandHandler
 from domain.exceptions.duplicate_transaction_exception import DuplicateTransactionException
 from domain.exceptions.illegal_transaction_amount_exception import IllegalTransactionAmountException
