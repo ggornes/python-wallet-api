@@ -1,5 +1,8 @@
-from uuid import UUID
+import psycopg2
+import psycopg2.extras
 
+from psycopg2 import OperationalError
+from uuid import UUID
 from fastapi import APIRouter, status, Request, FastAPI
 from starlette.responses import JSONResponse
 from data.in_memory_wallet_repository import InMemoryWalletRepository
@@ -14,6 +17,25 @@ from rest.wallet_transaction_request import WalletTransactionRequest
 from rest.wallet_transaction_response import WalletTransactionResponse
 
 
+def get_connection():
+    connection = None
+    try:
+        connection = psycopg2.connect(
+            database=config.POSTGRES_DB,
+            user=config.POSTGRES_USER,
+            password=config.POSTGRES_PASSWORD,
+            host=config.POSTGRES_DB_HOST,
+        )
+        print("Connection to PostgreSQL DB successful")
+    except OperationalError as e:
+        print(f"The error '{e}' occurred")
+    return connection
+
+
+psycopg2.extras.register_uuid()
+connection = get_connection()
+
+
 def get_application():
     app = FastAPI(title="Wallet API")
     return app
@@ -23,7 +45,7 @@ app = get_application()
 
 router = APIRouter()
 
-wallet_repository = InMemoryWalletRepository()
+wallet_repository = PostgresWalletRepository(connection)
 commandHandler = CommandHandler(wallet_repository)
 queryHandler = QueryHandler(wallet_repository)
 
@@ -84,6 +106,22 @@ def handle_illegal_transaction_amount_exception(req: Request, ex: IllegalTransac
     return JSONResponse(
         status_code=400,
         content={"message": ex.message}
+    )
+
+
+@app.exception_handler(VersionMissmatchException)
+def handle_version_missmatch_exception(req: Request, ex: VersionMissmatchException):
+    return JSONResponse(
+        status_code=400,
+        content={"message": ex.message}
+    )
+
+
+@app.exception_handler(RuntimeError)
+def handle_run_time_error_exception(req: Request, ex: RuntimeError):
+    return JSONResponse(
+        status_code=500,
+        content={"message": "Internal server error"}
     )
 
 
