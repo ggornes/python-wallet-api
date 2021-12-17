@@ -5,11 +5,13 @@ from psycopg2 import OperationalError
 from uuid import UUID
 from fastapi import APIRouter, status, Request, FastAPI
 from starlette.responses import JSONResponse
-from data.in_memory_wallet_repository import InMemoryWalletRepository
+from app import config
+from data.postgres_wallet_repository import PostgresWalletRepository
 from domain.command_handler import CommandHandler
 from domain.exceptions.duplicate_transaction_exception import DuplicateTransactionException
 from domain.exceptions.illegal_transaction_amount_exception import IllegalTransactionAmountException
 from domain.exceptions.insufficient_wallet_funds_exception import InsufficientWalletFundsException
+from domain.exceptions.version_mismatch_exception import VersionMissmatchException
 from domain.exceptions.wallet_not_found import WalletNotFoundException
 from domain.query_handler import QueryHandler
 from rest.wallet_balance_response import WalletBalanceResponse
