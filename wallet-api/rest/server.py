@@ -9,6 +9,7 @@ from domain.command_handler import CommandHandler
 from domain.exceptions.duplicate_transaction_exception import DuplicateTransactionException
 from domain.exceptions.illegal_transaction_amount_exception import IllegalTransactionAmountException
 from domain.exceptions.insufficient_wallet_funds_exception import InsufficientWalletFundsException
+from domain.exceptions.version_mismatch_exception import VersionMissmatchException
 from domain.exceptions.wallet_not_found import WalletNotFoundException
 from domain.query_handler import QueryHandler
 from rest.wallet_balance_response import WalletBalanceResponse
@@ -98,6 +99,22 @@ def handle_illegal_transaction_amount_exception(req: Request, ex: IllegalTransac
     return JSONResponse(
         status_code=400,
         content={"message": ex.message}
+    )
+
+
+@app.exception_handler(VersionMissmatchException)
+def handle_version_missmatch_exception(req: Request, ex: VersionMissmatchException):
+    return JSONResponse(
+        status_code=400,
+        content={"message": ex.message}
+    )
+
+
+@app.exception_handler(RuntimeError)
+def handle_run_time_error_exception(req: Request, ex: RuntimeError):
+    return JSONResponse(
+        status_code=500,
+        content={"message": "Internal server error"}
     )
 
 
