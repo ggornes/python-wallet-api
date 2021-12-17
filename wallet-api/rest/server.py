@@ -89,4 +89,20 @@ def handle_illegal_transaction_amount_exception(req: Request, ex: IllegalTransac
     )
 
 
+@app.exception_handler(VersionMissmatchException)
+def handle_version_missmatch_exception(req: Request, ex: VersionMissmatchException):
+    return JSONResponse(
+        status_code=400,
+        content={"message": ex.message}
+    )
+
+
+@app.exception_handler(RuntimeError)
+def handle_run_time_error_exception(req: Request, ex: RuntimeError):
+    return JSONResponse(
+        status_code=500,
+        content={"message": "Internal server error"}
+    )
+
+
 app.include_router(router)
