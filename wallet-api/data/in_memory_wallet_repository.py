@@ -10,7 +10,10 @@ from domain.wallet_balance import WalletBalance
 
 
 class InMemoryWalletRepository(WalletRepository, WalletBalanceRepository):
-    wallet_repo = dict()
+    wallet_repo = dict
+
+    def __init__(self):
+        self.wallet_repo = dict()
 
     def save(self, wallet: Wallet) -> None:
         wallet_id = wallet.wallet_id
@@ -49,3 +52,9 @@ class InMemoryWalletRepository(WalletRepository, WalletBalanceRepository):
     def get_latest_transaction(self, wallet_id: UUID) -> Transaction:
         saved_transactions = self.get_saved_transactions(wallet_id)
         return saved_transactions[-1]
+
+    def add_transaction(self, tx: Transaction) -> None:
+        wallet_id = tx.wallet_id
+        saved_transactions = self.get_saved_transactions(wallet_id)
+        saved_transactions.append(tx)
+        self.wallet_repo[wallet_id] = saved_transactions
